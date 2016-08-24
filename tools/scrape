@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+// Modules:
+var fs          = require('fs');
+var querystring = require('querystring');
+var request     = require('request-promise');
+var _           = require('underscore');
+
+
+// Vars:
+var filename = process.argv.pop();
+var result   = require(process.cwd()+'/'+filename);
+var last     = _(result).last();
+
+
+console.log('Starting at ' + (+new Date(last.created * 1000)));
+
+fetch(last.id, last.created);
+
+function fetch (name, timestamp) {
+
+  //var url = 'https://www.reddit.com/r/beertrade.json?';
+  var url = 'https://www.reddit.com/r/beertrade/search.json?';
+  var query = {
+    restrict_sr: 'on',
+    sort: 'new',
+    t: 'link',
+    limit: 100,
+    syntax: 'cloudsearch'
+  };
+  if (name) {
+    query.after = name;
+    query.q = '(and timestamp:0..' + timestamp + ')';
+    //query.count = count ? count : 0;
+    console.log('Fetching before ' + (new Date(timestamp * 1000)));
+  }
+  url = url + querystring.stringify(query);
+
+  console.log('URL: ' + url);
+
+  // Make request:
+  return request(url, {json: true}).then(function (json) {
+    var links = json.data.children;
+    var last = _.last(links);
+    collect(links);
+    if (links.length > 0) {
+      // return console.log(JSON.stringify(result, null, '  '));
+
+      // Fetch next:
+      return fetch(last.data.name, last.data.created);
+    } else {
+      write(result);
+    }
+  })
+  .catch(function (err) {
+    write(result);
+    console.log(err);
+  });
+}
+
+
+function collect (links) {
+  links = _.chain(links)
+    .filter(function (link) {
+      return !link.data.stickied;
+    })
+    .map(function (link) {
+      var data = link.data;
+      return {
+        id: data.name,
+        title: data.title,
+        url: data.url,
+        created: data.created,
+        commentCount: data.num_comments,
+        ups: data.ups,
+        down: data.downs,
+        body: data.selftext
+      }
+    })
+    .value();
+
+  result = result.concat(links);
+}
+
+function write (data) {
+  fs.writeFile(filename, JSON.stringify(data, null, '  '));
+}

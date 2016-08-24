@@ -1,0 +1,15 @@
+{
+  "name": "beertrade-stats",
+  "version": "1.0.0",
+  "description": "reddit.com/r/beertrade stats",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Carl Sutherland <carl@humblesoftware.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "request-promise": "^4.1.1",
+    "underscore": "^1.8.3"
+  }
+}
